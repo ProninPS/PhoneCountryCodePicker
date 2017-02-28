@@ -14,6 +14,7 @@
     NSDictionary * _PCCs;
     NSArray * _keys;
     void(^_completion)(id);
+    NSString * _russianDictionary;
 }
 @end
 
@@ -39,6 +40,8 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+  
+    _russianDictionary = @"АБВГДЕЗИЙКЛМНОПРСТУФХЦЧШЭЮЯ";
     
     [self.tableView setShowsHorizontalScrollIndicator:NO];
     [self.tableView setShowsVerticalScrollIndicator:NO];
@@ -58,20 +61,20 @@
                                                           options:kNilOptions
                                                             error:nil];
         
-        if (_isUsingChinese) {
-            _PCCs = [self chineseSortWithDictionaryArray:array];
+        if (_isUsingRussian) {
+            _PCCs = [self russianSortWithDictionaryArray:array];
         }else{
             _PCCs = [self englishSortWithDictionaryArray:array];
         }
         _keys = [[_PCCs allKeys] sortedArrayUsingComparator:^NSComparisonResult(id obj1, id obj2) {
-            return [obj1 compare:obj2 options:NSNumericSearch];
+            return [obj1 localizedCaseInsensitiveCompare:obj2];
         }];
         dispatch_async(dispatch_get_main_queue(), ^{
             
             [aiview stopAnimating];
             [[self navigationItem] setTitleView:currentTitleView];
             
-            [self.navigationItem setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:_leftBarButtonItemTitle?:_isUsingChinese?@"取消":@"Cancel" style:UIBarButtonItemStylePlain target:self action:@selector(cancel)]];
+            [self.navigationItem setLeftBarButtonItem:[[UIBarButtonItem alloc] initWithTitle:_leftBarButtonItemTitle?:_isUsingRussian?@"Отмена":@"Cancel" style:UIBarButtonItemStylePlain target:self action:@selector(cancel)]];
             
             [self.tableView reloadData];
         });
@@ -143,6 +146,30 @@
     return resultDic;
 }
 
+#pragma mark - PCCs data for ru
+
+- (NSDictionary*)russianSortWithDictionaryArray:(NSArray*)dictionaryArray {
+  NSMutableArray * sourceArray = [dictionaryArray mutableCopy];
+  [sourceArray sortUsingComparator:^NSComparisonResult(id obj1, id obj2) {
+    return [[obj1 objectForKey:@"country_ru"] localizedCaseInsensitiveCompare:[obj2 objectForKey:@"country_ru"]];
+  }];
+  
+  NSMutableDictionary * resultDic = [NSMutableDictionary dictionary];
+  NSInteger length = [_russianDictionary length];
+  for (NSInteger firstChar = 0; firstChar < length; firstChar ++) {
+    [resultDic setObject:[NSMutableArray array] forKey:[NSString stringWithFormat:@"%C",[_russianDictionary characterAtIndex: firstChar]]];
+  }
+  for (NSDictionary * dic in sourceArray) {
+    [resultDic[[dic[@"country_ru"] substringToIndex:1]] addObject:dic];
+  }
+  for (NSString * key in [resultDic allKeys]) {
+    if ([resultDic[key] count] == 0) {
+      [resultDic removeObjectForKey:key];
+    }
+  }
+  return resultDic;
+}
+
 - (NSString*) chineseStringTransformPinyin: (NSString*)chineseString {
     if (chineseString == nil) {
         return nil;
@@ -165,7 +192,8 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     if (_PCCs) {
-        return [[_PCCs valueForKey: [_keys objectAtIndex:section]] count];
+      NSString *currentKey = [_keys objectAtIndex:section];
+        return [[_PCCs valueForKey: currentKey] count];
     }
     return [super tableView:tableView numberOfRowsInSection:section];
 }
@@ -176,20 +204,24 @@
 }
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cellIdentifier" forIndexPath:indexPath];
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"cellIdentifier"]; //forIndexPath:indexPath];
     if (!cell) {
         cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:@"cellIdentifier"];
     }
     if (_PCCs) {
-        NSDictionary * countryDic = [_PCCs valueForKey:[_keys objectAtIndex:[indexPath section]]][indexPath.row];
+        NSString *currentKey = [_keys objectAtIndex:[indexPath section]];
+        NSDictionary *currentLetterAllCountries = [_PCCs valueForKey: currentKey];
         [[cell textLabel] setFont:[UIFont systemFontOfSize:15]];
-        if (_isUsingChinese) {
-            [[cell textLabel] setText:countryDic[@"country_cn"]];
+      if ([_PCCs valueForKey: currentKey][indexPath.row] != nil) {
+        NSDictionary * countryDic = [_PCCs valueForKey: currentKey][indexPath.row];
+        if (_isUsingRussian) {
+          [[cell textLabel] setText:countryDic[@"country_ru"]];
         }else{
-            [[cell textLabel] setText:countryDic[@"country_en"]];
+          [[cell textLabel] setText:countryDic[@"country_en"]];
         }
         [[cell imageView] setImage:[PCCPViewController imageForCountryCode:countryDic[@"country_code"]]];
         return cell;
+      }
     }
     return cell;;
 }
