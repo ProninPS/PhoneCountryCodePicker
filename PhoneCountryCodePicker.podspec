@@ -10,6 +10,6 @@ Pod::Spec.new do |s|
   s.social_media_url      = "https://twitter.com/DwarvenYang"
   s.source                = { :git => 'https://github.com/Dwarven/PhoneCountryCodePicker.git', :tag => s.version, :submodules => true }
   s.source_files          = 'PhoneCountryCodePicker/*.{h,m}'
-  s.dependency              'Phone-Country-Code-and-Flags'
+  s.dependency              'Phone-Country-Code-and-Flags', :git => 'https://github.com/ProninPS/Phone-Country-Code-and-Flags.git'
 
 end
