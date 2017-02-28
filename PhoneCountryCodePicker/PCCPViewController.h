@@ -10,7 +10,7 @@
 
 @interface PCCPViewController : UITableViewController
 
-@property (nonatomic) BOOL isUsingChinese;
+@property (nonatomic) BOOL isUsingRussian;
 @property (nonatomic, strong) NSString * leftBarButtonItemTitle;
 
 - (id)initWithCompletion:(void(^)(id countryDic))completion;
